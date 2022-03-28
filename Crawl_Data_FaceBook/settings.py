@@ -14,8 +14,13 @@ NEWSPIDER_MODULE = 'Crawl_Data_FaceBook.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'Crawl_Data_FaceBook (+http://www.yourdomain.com)'
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
+# OF KHOAN
+# USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15'
+# OF HUYNHNGOCTHIEN
+# USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
+# OF GOOOGLE
+USER_AGENT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
+
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -55,7 +60,7 @@ DOWNLOADER_MIDDLEWARES = {
     'scrapy_splash.SplashCookiesMiddleware': 723,
     'scrapy_splash.SplashMiddleware': 725,
     'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
-    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
+    # 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
     # 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     # 'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
     # 'scrapy_fake_useragent.middleware.RandomUserAgentMiddleware': 400,
@@ -111,8 +116,8 @@ SPLASH_COOKIES_DEBUG = True
 
 FACEBOOK_ACCOUNT = [
     {
-        "account": "mathforlife03092000@gmail.com",
-        "password": "!#%&(246810Bach"
+        "account": "ltb1002.aff@gmail.com",
+        "password": "deepAI140421"
     }
 ]
 
@@ -141,7 +146,7 @@ SEARCH_QUERY = [
 
 SEARCH_LINK = "https://facebook.com/search/people?q="
 
-RETRY_TIMES = 9999
+RETRY_TIMES = 200
 
 FORMAT_TYPES = 'json'
 FEED_EXPORT_ENCODING = 'utf-8'

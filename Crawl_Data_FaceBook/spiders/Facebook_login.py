@@ -86,6 +86,5 @@ class FacebookLoginSpider(scrapy.Spider):
             out.write(response.text)
 
         # Store cookie to json file
-
         with open("./cookies/cookie.json", 'w+') as jsonfile:
             json.dump(response.data['cookies'], jsonfile, ensure_ascii=False)

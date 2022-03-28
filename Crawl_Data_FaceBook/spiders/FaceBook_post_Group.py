@@ -3,30 +3,28 @@ import scrapy
 from scrapy.utils.project import get_project_settings
 from scrapy_splash import SplashRequest
 import json
-from Crawl_Data_FaceBook.items import CrawlData
+from Crawl_Data_FaceBook.items import CrawlData, PostItem, PostInfoItem
 
-Customer_Id = ['100000157973823']
-Group_Id = ['3309093339215806']
+Page_Id = ['tintuc2', '714257262432794', '269067133142215', 'tinnonghoi.vn', '171952859547317', '348017149108768', '273257912789357', 'VietnamProjectsConstructionGROUP', 'u23fanclub', 'tinnongbaomoi24h']
+idx=2
 
 class FacebookPostGroupSpider(scrapy.Spider):
     name = 'FaceBook_post_Group'
-    def __init__(self, scrolls='', the_uuid='', user_id='', **kwargs):
+    def __init__(self, scrolls="20", the_uuid='', user_id='', **kwargs):
         self.scrolls = scrolls
         self.user_id = user_id
         self.the_uuid = the_uuid
         super().__init__(**kwargs)
+        self.xpath_view_more_info = "span[class='_75in _75iq']"
+        self.xpath_cmt = "_15kq _77li"
 
     # This will setup settings variable to get constant from settings.py
-
     settings = get_project_settings()
-
-    xpath_view_more_info = "text_exposed_hide"
+    # xpath_view_more_info = "more"
     # Lua script to interact with js in the website while crawling
 
-    
     def start_requests(self):
-
-        script_link = """
+        script_link = '''
                 function main(splash, args)
                     splash:init_cookies(splash.args.cookies)
                     assert(splash:go{
@@ -39,20 +37,12 @@ class FacebookPostGroupSpider(scrapy.Spider):
                     local get_body_height = splash:jsfunc(
                         "function() {return document.body.scrollHeight;}"
                     )
-                    for _ = 1, 5 do
+                    for _ = 1, '''+ self.scrolls +''' do
                         scroll_to(0, get_body_height())
-                        assert(splash:wait(1))
+                        assert(splash:wait(0.5))
                     end 
                     
                     assert(splash:wait(5))
-
-                    local divs = splash:select_all("div[class='""" + self.xpath_view_more_info + """']")
-                    for _, _ in ipairs(divs) do
-                        local _div = splash:select("div[class='""" + self.xpath_view_more_info + """']")
-                        if _div ~= nil then
-                            assert(_div:mouse_click())
-                        end
-                    end
                     
                     local entries = splash:history()
                     local last_response = entries[#entries].response
@@ -64,69 +54,96 @@ class FacebookPostGroupSpider(scrapy.Spider):
                         url = splash.url()
                     }
                 end
-            """
+            '''
 
 
         # Send splash request with facebook cookie and lua script to check if cookie is logged in or not
         with open('./cookies/cookie_bach.json', 'r') as jsonfile:
             cookies = json.load(jsonfile)["cookies"]
                
-        with open('./homepage/html/homepage_BDS.html', 'w+') as out:
-            out.write('')
-            #Lấy list id 
-        for g_id in Group_Id:
-            yield SplashRequest(
-                url="https://m.facebook.com/profile.php?id={}&groupid={}".format(Customer_Id[0], g_id),
-                callback=self.parse,
-                session_id="test",
-                meta={
-                    "splash": {
+        g_id = Page_Id[idx]
+        # print(f"CRAWLING {g_id}")
+        yield SplashRequest(
+            url=f"https://m.facebook.com/groups/{g_id}",
+            # url=f"https://m.facebook.com/groups/tintuc2",
+            callback=self.parse,
+            session_id="test",
+            meta={
+                "splash": {
+                    "endpoint": "execute", 
                         "endpoint": "execute", 
-                        "args": {
-                            "lua_source": script_link,
-                            "cookies": cookies,
-                            "timeout":3600,
-                        }
+                    "endpoint": "execute", 
+                        "endpoint": "execute", 
+                    "endpoint": "execute", 
+                        "endpoint": "execute", 
+                    "endpoint": "execute", 
+                    "args": {
+                        "lua_source": script_link,
+                        "cookies": cookies,
+                        "timeout":3600,
                     }
                 }
-            )
+            }
+        )
 
     def parse(self, response):
-
-        
         # If login is fail, delete cookie and ask for new one
         # client = MongoClient(CONNECTION_STRING)
         # db_name = client["Posts"]
         # collection_name = db_name["Post"]
 
-        with open('./homepage/html/PostInGroup.html', 'w+', encoding='utf-8') as out:
+        with open('./homepage/html/PostInPage.html', 'w+', encoding='utf-8') as out:
             out.write(response.text)
 
-        h = scrapy.Selector(response)
+        root = scrapy.Selector(response)
+        item = PostItem()
+        item['info'] = PostInfoItem()
         
-        # post_info = h.css("div._4gur._5t8z")
+        posts = root.xpath("""//*[@class="_55wo _5rgr _5gh8 async_like"]""")
         
-        ### content
-        post_contents = h.xpath("""//*[@class="_5rgt _5nk5 _5msi"]/div/span""")
-        # for span in post_contents:
-        #     print("=========================================================")
-        #     p = span.xpath("""p//text()""")
-        #     print(p.getall())
-        #     hidden_div = span.xpath("""div//text()""")
-        #     print(hidden_div.getall())
-        #     # if len(i.get_children()) > 1: print(i.get_children()[1])
-        #     print("=========================================================")
+        for post in posts:
+            body = post.xpath("div")
+            footer = post.xpath("footer")
+        
+            ### post id
+            dataft = eval(post.attrib['data-ft'])
+            try: item['post_id'] = dataft['top_level_post_id']
+            except: pass
+            try: item['page_id'] = dataft['page_id']
+            except: pass
             
-        item = CrawlData()
-        # for product in post_info:   
-        # item["post"] = " ".join(product.css("div._il ::text").extract())
+            ### PIL image
+            
+            ### source url  
+            try: source_url = "https://www.facebook.com/permalink.php?"+\
+                        f"story_fbid={dataft['mf_story_key']}&id={dataft['page_id']}"
+            except: source_url = ""
+            item['source_url'] = source_url
+            
+            ### metadata: post time, # emotions, # comments, # share
+            n_reacts = footer.xpath("div/div[1]/a/div/div[1]/div//text()")
+            item['info']['number_of_reacts'] = n_reacts.get()
+            
+            n_comments = footer.xpath("div/div[1]/a/div/div[2]/span[1]//text()")
+            item['info']['number_of_comments'] = n_comments.get()
+            
+            n_shares = footer.xpath("div/div[1]/a/div/div[2]/span[2]//text()")
+            item['info']['number_of_shares'] = n_shares.get()
+            
+            date = body.xpath("header/div[2]/div/div/div[1]/div/a/abbr//text()")
+            item['info']['date'] = date.get()
+            
+            ### comments
+            ### shared post
         
-        for post_content in post_contents:
+            ### text
+            content = body.xpath("""div/div""")
             # print(i.get())
-            main_content = post_content.xpath("""p//text()""")
-            hidden_content = post_content.xpath("""div//text()""")
-            item['post'] = " ".join([i for i in main_content.getall() if i!="Xem thêm"]) \
-                            + " ".join([i for i in hidden_content.getall() if i!="Xem thêm"])
+            exposed = content.xpath("""span//text()""")
+            background = content.xpath("""div/span[2]//text()""")
+            # hidden = content.xpath("""span/div//text()""")
+            item['text'] = " ".join([i for i in exposed.getall() if i!="Xem thêm"]) \
+                        + " ".join([i for i in background.getall() if i!="Xem thêm"])
             yield item
 
 

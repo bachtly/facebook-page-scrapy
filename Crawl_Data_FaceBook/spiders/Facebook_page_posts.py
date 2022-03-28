@@ -5,17 +5,18 @@ from scrapy_splash import SplashRequest
 import json
 from Crawl_Data_FaceBook.items import CrawlData, PostItem, PostInfoItem
 
-Page_Id = ['botruongboyte.vn', 'thongtinchinhphu']
-idx=1
+Page_Id = ['WHOVietnam', 'xahoi.com.vn', 'sao247new', 'tintucvtv24', 'tintucthoisu24giohomnay']
+Page_Name = ['World Health Organization Viet Nam - Tổ chức Y tế Thế giới Việt Nam']
+idx=0
 
-class FacebookPageSpider(scrapy.Spider):
-    name = 'FaceBook_page'
-    def __init__(self, scrolls="", the_uuid='', user_id='', **kwargs):
+class FacebookPagePostsSpider(scrapy.Spider):
+    name = 'FaceBook_page_posts'
+    def __init__(self, scrolls="4", the_uuid='', user_id='', **kwargs):
         self.scrolls = scrolls
         self.user_id = user_id
         self.the_uuid = the_uuid
         super().__init__(**kwargs)
-        self.xpath_view_more_info = "span[class='_75in _75iq']"
+        self.xpath_view_more_info = "a[#u_0_72_Ne]"
         self.xpath_cmt = "_15kq _77li"
 
     # This will setup settings variable to get constant from settings.py
@@ -31,28 +32,32 @@ class FacebookPageSpider(scrapy.Spider):
                         splash.args.url,
                         headers=splash.args.headers
                     })
+                    
                     assert(splash:wait(5))
+                    
                     splash:set_viewport_full()
+                    
                     local scroll_to = splash:jsfunc("window.scrollTo")
                     local get_body_height = splash:jsfunc(
                         "function() {return document.body.scrollHeight;}"
                     )
-                    for _ = 1, '''+ self.scrolls +''' do
+                    
+                    for _ = 1, ''' +self.scrolls +''' do
                         scroll_to(0, get_body_height())
                         assert(splash:wait(1))
                     end 
                     
                     assert(splash:wait(5))
 
-                    --local divs = splash:select_all(" ''' + self.xpath_view_more_info + ''' ")
-                    --for _, _ in ipairs(divs) do
-                    --    local _div = splash:select(" ''' + self.xpath_view_more_info + ''' ")
-                    --    if _div ~= nil then
-                    --        assert(_div:mouse_click())
-                    --        assert(splash:wait(1))
-                    --    end
+                    --local divs = splash:select_all("div.text_exposed_hide span")
+                    --for _, _div in ipairs(divs) do
+                        --local _div = splash:select("div.text_exposed_hide span")
+                        --if _div ~= nil then
+                            --assert(_div:mouse_click())
+                            --assert(splash:wait(2))
+                        --end
                     --end
-                    
+
                     local entries = splash:history()
                     local last_response = entries[#entries].response
 
@@ -70,10 +75,12 @@ class FacebookPageSpider(scrapy.Spider):
         with open('./cookies/cookie_bach.json', 'r') as jsonfile:
             cookies = json.load(jsonfile)["cookies"]
                
+        # g_id = Page_Name[idx]
         g_id = Page_Id[idx]
         # print(f"CRAWLING {g_id}")
         yield SplashRequest(
-            url=f"https://m.facebook.com/{g_id}",
+            url=f"https://touch.facebook.com/{g_id}/posts",
+            # url=f"https://m.facebook.com/search/posts/?q={g_id}",
             callback=self.parse,
             session_id="test",
             meta={
@@ -100,14 +107,14 @@ class FacebookPageSpider(scrapy.Spider):
         # db_name = client["Posts"]
         # collection_name = db_name["Post"]
 
-        with open('./homepage/html/PostInPage.html', 'w+', encoding='utf-8') as out:
+        with open('./homepage/html/PostInPagePost.html', 'w+', encoding='utf-8') as out:
             out.write(response.text)
 
         root = scrapy.Selector(response)
         item = PostItem()
         item['info'] = PostInfoItem()
         
-        posts = root.xpath("""//*[@class="_55wo _5rgr _5gh8 async_like _1tl-"]""")
+        posts = root.xpath("""//*[@class="_55wo _5rgr _5gh8 _3drq async_like"]""")
         
         for post in posts:
             body = post.xpath("div")
@@ -153,3 +160,11 @@ class FacebookPageSpider(scrapy.Spider):
 
 
 
+# --local divs = splash:select_all(" ''' + self.xpath_view_more_info + ''' ")
+# --for _, _ in ipairs(divs) do
+# --    local _div = splash:select(" ''' + self.xpath_view_more_info + ''' ")
+# --    if _div ~= nil then
+# --        assert(_div:mouse_click())
+# --        assert(splash:wait(2))
+# --    end
+# --end
