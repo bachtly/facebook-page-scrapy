@@ -6,11 +6,11 @@ import json
 from Crawl_Data_FaceBook.items import CrawlData, PostItem, PostInfoItem
 
 Page_Id = ['botruongboyte.vn', 'thongtinchinhphu']
-idx=1
+idx=0
 
 class FacebookPageSpider(scrapy.Spider):
     name = 'FaceBook_page'
-    def __init__(self, scrolls="", the_uuid='', user_id='', **kwargs):
+    def __init__(self, scrolls="2", the_uuid='', user_id='', **kwargs):
         self.scrolls = scrolls
         self.user_id = user_id
         self.the_uuid = the_uuid
