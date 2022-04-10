@@ -9,9 +9,18 @@ import os
 import time
 import json
 import numpy as np
+from datetime import datetime
 
-group_ids = ['tintuc2', 'VietnamProjectsConstructionGROUP', 'tinnongbaomoi24h']
-group_idx=0
+group_ids = ['VietnamProjectsConstructionGROUP', 
+           'tinnongbaomoi24h', 
+           'tintuc2', 
+           '714257262432794', 
+           'tinnonghoi.vn', 
+           '171952859547317', 
+           '348017149108768', 
+           '273257912789357', 
+           'u23fanclub']
+group_idx=4
 
 class FacebookGroupSpider(scrapy.Spider):
     name = 'facebook_group'
@@ -30,32 +39,45 @@ class FacebookGroupSpider(scrapy.Spider):
         self.post_urls = []
         self.url = ''
         
-        self.is_crawling_post = False
-        self.html_page_dir = './homepage/html/pages'
-        self.html_post_dir = './homepage/html/posts'
+        self.sleep_time = 600
+        self.log_file = './log.txt'
+        self.g_id = group_ids[group_idx]
         
-        self.sleep_time = 20
+        self.is_crawling_post = False
+        self.html_page_dir = f'./homepage/html/{self.g_id}/pages'
+        self.html_post_dir = f'./homepage/html/{self.g_id}/posts'
+        
+    def log(self, s):
+        with open(self.log_file, 'a') as f:
+            f.write(str(datetime.now()))
+            f.write(s)
+            f.write('\n')   
         
     def get_cookie(self):
-        print(f"---------- Use cookie index {self.cookie_idx}")
+        self.log(f"---------- Use cookie index {self.cookie_idx}")
         cookie = self.cookies[self.cookie_idx]
         self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
         return cookie
     
     def start_requests(self):
-        g_id = group_ids[group_idx]
-        self.start_urls += [f"https://mbasic.facebook.com/{g_id}"]
+        if not os.path.isdir(self.html_page_dir):
+            os.makedirs(self.html_page_dir)
+        if not os.path.isdir(self.html_post_dir):
+            os.makedirs(self.html_post_dir)
         
-        for url in self.start_urls:
-            print(f"---------- Sleeping {self.sleep_time}s before crawling . . .")
-            time.sleep(self.sleep_time)
+        self.start_urls += [f"https://mbasic.facebook.com/{self.g_id}"]
+        
+        url = self.start_urls[0]
             
-            self.url = url
-            yield Request(
-                url=url,
-                cookies=self.get_cookie(),
-                callback=self.parse,
-            )
+        self.log(f"---------- Sleeping {self.sleep_time}s before crawling . . .")
+        time.sleep(self.sleep_time)
+        
+        self.url = url
+        yield Request(
+            url=url,
+            cookies=self.get_cookie(),
+            callback=self.parse,
+        )
 
     def parse(self, response):
         ### Save html
@@ -66,7 +88,7 @@ class FacebookGroupSpider(scrapy.Spider):
                 url_text_line = f"<!-- {self.url} -->\n"
                 out.write(url_text_line)
                 out.write(response.text)
-                print(f"---------- Save post to {os.path.join(self.html_post_dir, new_file_name)}")
+                self.log(f"---------- Save post to {os.path.join(self.html_post_dir, new_file_name)}")
         else:
             file_index = len(os.listdir(self.html_page_dir))
             new_file_name = format(file_index, '06d') + '.html'
@@ -74,7 +96,7 @@ class FacebookGroupSpider(scrapy.Spider):
                 url_text_line = f"<!-- {self.url} -->\n"
                 out.write(url_text_line)
                 out.write(response.text)
-                print(f"---------- Save page to {os.path.join(self.html_page_dir, new_file_name)}")
+                self.log(f"---------- Save page to {os.path.join(self.html_page_dir, new_file_name)}")
 
         ### If crawling page, add more post and page urls
         if not self.is_crawling_post:
@@ -95,9 +117,9 @@ class FacebookGroupSpider(scrapy.Spider):
                 self.page_urls += [f"https://mbasic.facebook.com{href}"]
 
 
-        print("---------- Length of queues")
-        print(f"Post queue: {len(self.post_urls)}")
-        print(f"Page queue: {len(self.page_urls)}")
+        self.log("---------- Length of queues")
+        self.log(f"Post queue: {len(self.post_urls)}")
+        self.log(f"Page queue: {len(self.page_urls)}")
         
         if len(self.post_urls) > 0:
             self.url = self.post_urls[-1]
@@ -108,10 +130,10 @@ class FacebookGroupSpider(scrapy.Spider):
             self.page_urls = self.page_urls[:-1]
             self.is_crawling_post = False
         else:
-            print("---------- Queues empty")
+            self.log("---------- Queues empty")
             yield None
             
-        print(f"---------- Sleeping {self.sleep_time}s before crawling . . .")
+        self.log(f"---------- Sleeping {self.sleep_time}s before crawling . . .")
         time.sleep(self.sleep_time)
 
         yield Request(

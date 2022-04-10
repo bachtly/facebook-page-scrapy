@@ -5,6 +5,7 @@ homepage/html/*
 group_results/*
 page_results/*
 cookies/*
+log.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
