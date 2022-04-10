@@ -5,12 +5,13 @@ from scrapy_splash import SplashRequest
 import json
 from Crawl_Data_FaceBook.items import CrawlData, PostItem, PostInfoItem
 
-Page_Id = ['tintuc2', '714257262432794', '269067133142215', 'tinnonghoi.vn', '171952859547317', '348017149108768', '273257912789357', 'VietnamProjectsConstructionGROUP', 'u23fanclub', 'tinnongbaomoi24h']
+Page_Id = ['VietnamProjectsConstructionGROUP', 'tinnongbaomoi24h', 'tintuc2', '714257262432794', 'tinnonghoi.vn', '171952859547317', '348017149108768', '273257912789357', 'VietnamProjectsConstructionGROUP', 'u23fanclub', 'tinnongbaomoi24h']
 idx=0
+
 
 class FacebookPostGroupSpider(scrapy.Spider):
     name = 'FaceBook_post_Group'
-    def __init__(self, scrolls="10", the_uuid='', user_id='', **kwargs):
+    def __init__(self, scrolls="5", the_uuid='', user_id='', **kwargs):
         self.scrolls = scrolls
         self.user_id = user_id
         self.the_uuid = the_uuid

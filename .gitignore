@@ -1,5 +1,11 @@
 .vscode
 
+# data crawled
+homepage/html/*
+group_results/*
+page_results/*
+cookies/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

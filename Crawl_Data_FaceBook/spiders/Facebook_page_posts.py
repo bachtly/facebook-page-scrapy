@@ -11,7 +11,7 @@ idx=0
 
 class FacebookPagePostsSpider(scrapy.Spider):
     name = 'FaceBook_page_posts'
-    def __init__(self, scrolls="4", the_uuid='', user_id='', **kwargs):
+    def __init__(self, scrolls="800", the_uuid='', user_id='', **kwargs):
         self.scrolls = scrolls
         self.user_id = user_id
         self.the_uuid = the_uuid
@@ -79,7 +79,7 @@ class FacebookPagePostsSpider(scrapy.Spider):
         g_id = Page_Id[idx]
         # print(f"CRAWLING {g_id}")
         yield SplashRequest(
-            url=f"https://touch.facebook.com/{g_id}/posts",
+            url=f"https://m.facebook.com/{g_id}/posts",
             # url=f"https://m.facebook.com/search/posts/?q={g_id}",
             callback=self.parse,
             session_id="test",
