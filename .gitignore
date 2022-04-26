@@ -1,7 +1,7 @@
 .vscode
 
 # data crawled
-homepage/html/*
+html
 group_results/*
 page_results/*
 cookies/*
