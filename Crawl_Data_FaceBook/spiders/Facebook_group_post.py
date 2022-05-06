@@ -213,7 +213,10 @@ class FacebookGroupPostSpider(scrapy.Spider):
         if self.mode == CR_POST: 
             ret_path = self.get_html_post(response)
             ret_items = [PostItem(), CmtItem()]
-        elif self.mode == CR_PAGE: ret_path = self.get_html_page(response)
+            self.log(f"Done crawling post {self.group_id}/{self.post_id} with path {ret_path}.")
+        elif self.mode == CR_PAGE: 
+            ret_path = self.get_html_page(response)
+            self.log(f"Done crawling page {self.group_id} with path {ret_path}.")
 
         self.log(f"Post | Page queues: {len(self.post_urls)} | {len(self.page_urls)}")
         
