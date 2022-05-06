@@ -49,3 +49,18 @@ FEED_EXPORT_ENCODING = 'utf-8'
 
 FEED_FORMAT = 'json'
 URLLENGTH_LIMIT = 5000
+
+GROUP_IDS = ['VietnamProjectsConstructionGROUP', 
+    'tinnonghoi.vn', 
+    'tinnongbaomoi24h', 
+    'tintuc2', 
+    '714257262432794', 
+    '171952859547317', 
+    '348017149108768', 
+    '273257912789357', 
+    'u23fanclub']
+
+ITEM_PIPELINES = {
+    'Crawl_Data_FaceBook.pipelines.ParsePipeline': 100,
+    'Crawl_Data_FaceBook.pipelines.DatabasePipeline': 200,
+}

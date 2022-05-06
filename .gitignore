@@ -2,10 +2,12 @@
 
 # data crawled
 html
-group_results/*
-page_results/*
+old_html
+group_results
+page_results
 cookies/*
 log.txt
+json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

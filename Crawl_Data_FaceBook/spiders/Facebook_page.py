@@ -4,7 +4,7 @@ from scrapy.utils.project import get_project_settings
 from scrapy_splash import SplashRequest
 from scrapy.http import Request
 import json
-from Crawl_Data_FaceBook.items import CrawlData, PostItem, PostInfoItem
+# from Crawl_Data_FaceBook.items import CrawlData, PostItem, PostInfoItem
 
 page_ids = ['tintuc2', 'botruongboyte.vn', 'thongtinchinhphu']
 idx=0
