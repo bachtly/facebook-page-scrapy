@@ -32,12 +32,14 @@ class ParsePipeline:
     def process_item(self, item, spider):
         if isinstance(item, PostItem):
             json_o = Parser.parse_post(dict(item))
+            log(f"Successfully parse post from {item['html_path']}")
         elif isinstance(item, CmtItem):
             json_o = Parser.parse_cmt(dict(item))
+            log(f"Successfully parse cmt from {item['html_path']}")
         elif isinstance(item, ReactionItem):
             json_o = Parser.parse_reaction(dict(item))
+            log(f"Successfully parse reaction from {item['html_path']}")
         # pprint(json_o)
-        log(f"Successfully parse {item['html_path']}")
         return item, json_o
     
 class DatabasePipeline:
