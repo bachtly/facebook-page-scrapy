@@ -49,7 +49,7 @@ class DatabasePipeline:
         if isinstance(item, PostItem):
             existed = DB.post_exist(item['page_id'], item['post_id'])
             if existed: return
-            if not DB.insert_post(json_o):
+            if not DB.insert_post(drop_none(json_o)):
                 log(f"[ERROR] Cannot insert new post. (page_id: {item['page_id']}, post_id: {item['post_id']})\n{json_o}")
                     
         elif isinstance(item, CmtItem):
@@ -58,9 +58,8 @@ class DatabasePipeline:
             for json_o in jsons:
                 existed = DB.cmt_exist(json_o['page_id'], json_o['post_id'], json_o['comment_id'])
                 if not existed:
-                    if DB.insert_cmt(json_o): ids += [json_o['comment_id']]
-                else: 
-                    log(f"[ERROR] Cannot insert new cmt. (page_id: {item['page_id']}, post_id: {item['post_id']}, comment_id: {json_o['comment_id']})\n{json_o}")
+                    if DB.insert_cmt(drop_none(json_o)): ids += [json_o['comment_id']]
+                    else: log(f"[ERROR] Cannot insert new cmt. (page_id: {item['page_id']}, post_id: {item['post_id']}, comment_id: {json_o['comment_id']})\n{json_o}")
 
             post = DB.get_post(item['page_id'], item['post_id'])
             

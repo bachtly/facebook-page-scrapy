@@ -157,14 +157,15 @@ class FacebookGroupPostSpider(scrapy.Spider):
             ### Get post_id
             try: 
                 data_ft = eval(post.attrib['data-ft'] )
-                self.post_id = str(int(data_ft['top_level_post_id']))
+                post_id = str(int(data_ft['top_level_post_id']))
             except: 
-                self.log(f'[ERROR] Cannot get post_id from data-ft (page,post)) ({page_id}, {post_id}).')
+                self.log(f'[ERROR] Cannot get post_id from data-ft (page)) ({self.page_id}).')
                 continue
             
             ### Check post existed in db
-            if DBUtils().post_exist(self.group_id, self.post_id): continue
+            if DBUtils().post_exist(self.group_id, post_id): continue
             
+            ### Add posts to crawl 
             more = post.xpath('div')
             if not more: continue   
             
@@ -195,7 +196,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
             data_ft = eval( article[0].attrib['data-ft'] )
             self.post_id = str(int(data_ft['top_level_post_id']))
         except: 
-            self.log(f'[ERROR] Cannot get post_id from data-ft of (page,post)) ({page_id}, {post_id}).')
+            self.log(f'[ERROR] Cannot get post_id from data-ft of (page,post)) ({self.page_id}, {self.post_id}).')
             return None
         
         post_dir = self.get_dir(f'./html/{self.group_id}')
