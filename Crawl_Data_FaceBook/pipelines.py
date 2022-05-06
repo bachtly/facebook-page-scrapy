@@ -1,3 +1,4 @@
+import json
 import pymongo
 from pprint import pprint
 from datetime import datetime
@@ -6,20 +7,11 @@ from db_config import *
 from itemadapter import ItemAdapter
 from Crawl_Data_FaceBook.items import PostItem, CmtItem, ReactionItem
 from Parse_Data_FaceBook.Parser import Parser
+from DatabaseUtils.DBUtils import DBUtils
 
 DEBUG = DB_DEBUG
 
-client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
-db = client[DB_NAME]
-
-list_of_collections = db.list_collection_names()
-if COLL_POST not in list_of_collections:
-    coll_post = db.create_collection(COLL_POST, validator=COLL_POST_VAL)
-if COLL_CMT not in list_of_collections:
-    coll_post = db.create_collection(COLL_CMT, validator=COLL_CMT_VAL)
-
-coll_post = db[COLL_POST]
-coll_cmt = db[COLL_CMT]
+DB = DBUtils()
 
 def log(s):
     if not DEBUG: return
@@ -55,39 +47,22 @@ class DatabasePipeline:
     def process_item(self, item, spider):
         item, json_o = item
         if isinstance(item, PostItem):
-            existed = coll_post.count_documents({
-                    'page_id': json_o['page_id'],
-                    'post_id': json_o['post_id']
-                }, limit=1)
-            if not existed:
-                try: 
-                    x = coll_post.insert_one(json_o)
-                    log(f"Insert new post to DB. (page_id: {json_o['page_id']}, post_id: {json_o['post_id']})")
-                except: 
-                    log(f"ERROR: cannot insert new post. (page_id: {json_o['page_id']}, post_id: {json_o['post_id']})")
+            existed = DB.post_exist(item['page_id'], item['post_id'])
+            if existed: return
+            if not DB.insert_post(json_o):
+                log(f"[ERROR] Cannot insert new post. (page_id: {item['page_id']}, post_id: {item['post_id']})\n{json_o}")
                     
         elif isinstance(item, CmtItem):
             jsons = json_o
             ids = []
             for json_o in jsons:
-                existed = coll_cmt.count_documents({
-                        'page_id': json_o['page_id'],
-                        'post_id': json_o['post_id'],
-                        'comment_id': json_o['comment_id']
-                    }, limit=1)
+                existed = DB.cmt_exist(json_o['page_id'], json_o['post_id'], json_o['comment_id'])
                 if not existed:
-                    coll_cmt.insert_one(json_o)
-                    ids += [json_o['comment_id']]
-                    # try: 
-                    #     x = coll_cmt.insert_one(json_o)
-                    #     ids += [x['_id']]
-                    #     log(f"Insert new comment to DB. (page_id: {json_o['page_id']}, post_id: {json_o['post_id']}, comment_id: {json_o['comment_id']})")
-                    # except: 
-                    #     log(f"ERROR: cannot insert new comment. (page_id: {json_o['page_id']}, post_id: {json_o['post_id']}, comment_id: {json_o['comment_id']})")
+                    if DB.insert_cmt(json_o): ids += [json_o['comment_id']]
+                else: 
+                    log(f"[ERROR] Cannot insert new cmt. (page_id: {item['page_id']}, post_id: {item['post_id']}, comment_id: {json_o['comment_id']})\n{json_o}")
 
-            post = coll_post.find_one({
-                'page_id': item['page_id'],
-                'post_id': item['post_id']})
+            post = DB.get_post(item['page_id'], item['post_id'])
             
             if post:
                 
@@ -98,35 +73,34 @@ class DatabasePipeline:
                 info['comments'] = len(comments_full)
                 info = drop_none(info)
                 
-                coll_post.update_one({
-                    'page_id': item['page_id'],
-                    'post_id': item['post_id']
-                }, {'$set': {'comments_full': comments_full, 'info': info}})
-                log(f"Update new comment_ids to DB. (page_id: {item['page_id']}, post_id: {item['post_id']})")
+                if not DB.update_post(item['page_id'], item['post_id'], 
+                    {'comments_full': comments_full, 'info': info}):
+                    log(f"[ERROR] Cannot update new cmt ids. (page_id: {item['page_id']}, post_id: {item['post_id']}, comment_id: {item['comment_id']})\n{{'comments_full': comments_full, 'info': info}}")
             else:
-                log(f"Cannot find record. (page_id: {item['page_id']}, post_id: {item['post_id']})")
+                log(f"[ERROR] Cannot find record. (page_id: {item['page_id']}, post_id: {item['post_id']})")
             
         elif isinstance(item, ReactionItem):
-            json_o = Parser.parse_reaction(dict(item))
-            reactions = json_o
+            pass
+            # json_o = Parser.parse_reaction(dict(item))
+            # reactions = json_o
             
-            post = coll_post.find_one({
-                'page_id': item['page_id'],
-                'post_id': item['post_id']})
+            # post = coll_post.find_one({
+            #     'page_id': item['page_id'],
+            #     'post_id': item['post_id']})
             
-            if post:
+            # if post:
             
-                info = post['info']
-                info['reactions'] = reactions
-                info['reaction_count'] = sum([j for i,j in reactions.items()])
-                info = drop_none(info)
+            #     info = post['info']
+            #     info['reactions'] = reactions
+            #     info['reaction_count'] = sum([j for i,j in reactions.items()])
+            #     info = drop_none(info)
                 
-                coll_post.update_one({
-                    'page_id': item['page_id'],
-                    'post_id': item['post_id']
-                }, {'$set': {'info': info}})
-                log(f"Update reactions to DB. (page_id: {item['page_id']}, post_id: {item['post_id']})")
-            else:
-                log(f"Cannot find record. (page_id: {item['page_id']}, post_id: {item['post_id']})")
+            #     coll_post.update_one({
+            #         'page_id': item['page_id'],
+            #         'post_id': item['post_id']
+            #     }, {'$set': {'info': info}})
+            #     log(f"Update reactions to DB. (page_id: {item['page_id']}, post_id: {item['post_id']})")
+            # else:
+            #     log(f"Cannot find record. (page_id: {item['page_id']}, post_id: {item['post_id']})")
         
         return item

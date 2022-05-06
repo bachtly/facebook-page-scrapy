@@ -1,0 +1,68 @@
+from db_config import *
+import pymongo
+
+class SingletonMeta(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]
+
+
+class DBUtils(metaclass=SingletonMeta):
+    
+    def __init__(self):
+            
+        self.client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
+        self.db = self.client[DB_NAME]    
+
+        list_of_collections = self.db.list_collection_names()
+        if COLL_POST not in list_of_collections:
+            coll_post = self.db.create_collection(COLL_POST, validator=COLL_POST_VAL)
+        if COLL_CMT not in list_of_collections:
+            coll_post = self.db.create_collection(COLL_CMT, validator=COLL_CMT_VAL)
+
+        self.coll_post = self.db[COLL_POST]
+        self.coll_cmt = self.db[COLL_CMT]
+    
+    def post_exist(self, page_id, post_id):
+        existed = self.coll_post.count_documents({
+            'page_id': page_id,
+            'post_id': post_id
+        }, limit=1)
+        return existed > 0
+
+    def insert_post(self, json_o):
+        try: self.coll_post.insert_one(json_o)
+        except: return False
+        return True
+    
+    def get_post(self, page_id, post_id):
+        return self.coll_post.find_one({
+            'page_id': page_id,
+            'post_id': post_id})
+        
+    def update_post(self, page_id, post_id, json_o):
+        try:
+            self.coll_post.update_one({
+                'page_id': page_id,
+                'post_id': post_id
+            }, {'$set': json_o})
+        except:
+            return False
+        return True
+    
+    def cmt_exist(self, page_id, post_id, cmt_id):
+        existed = self.coll_cmt.count_documents({
+            'page_id': page_id,
+            'post_id': post_id,
+            'comment_id': cmt_id
+        }, limit=1)
+        return existed > 0
+
+    def insert_cmt(self, json_o):
+        try: self.coll_cmt.insert_one(json_o)
+        except: return False
+        return True

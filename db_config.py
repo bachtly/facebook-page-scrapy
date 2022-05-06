@@ -56,7 +56,7 @@ COLL_CMT_VAL = {
         'properties': {
             'info': {
                 'bsonType': 'object',
-                'required': ['time', 'reaction_count', 'comments'],
+                'required': ['reaction_count', 'comments'],
                 'properties': {
                     'time': {'bsonType': 'date'},
                     'reaction_count': {'bsonType': 'int'},

@@ -2,7 +2,7 @@
 
 # data crawled
 html
-old_html
+*.old
 group_results
 page_results
 cookies/*
