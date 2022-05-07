@@ -27,7 +27,7 @@ class Parser():
                 else: items += [(t1,t2) for t1,t2 in unrol_dict(j).items()]
             return dict(items)
         data_ft_unrolled = unrol_dict(data_ft)
-        publish_time = data_ft['publish_time']
+        publish_time = data_ft_unrolled['publish_time']
         # post_context = list(data_ft['page_insights'].values())[0]['post_context']
         # publish_time = post_context['publish_time']
         return datetime.fromtimestamp(publish_time)
