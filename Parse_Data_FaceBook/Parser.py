@@ -34,6 +34,8 @@ class Parser():
     
     def parse_username(post):
         header_texts = post.xpath('div[1]/div[1]/div[1]/div[1]//text()')
+        if not header_texts:
+            header_texts = post.xpath('div[2]/div[1]/div[1]/div[1]//text()')
         return header_texts[0]
 
     def parse_user_id(post):
