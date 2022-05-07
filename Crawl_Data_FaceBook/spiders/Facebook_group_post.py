@@ -21,7 +21,7 @@ CR_COMMENT=3
 CR_REACTION=4
 
 DEBUG = SCRAPY_DEBUG
-GET_BACKUP_QUEUES = False       
+GET_BACKUP_QUEUES = True      
 
 class FacebookGroupPostSpider(scrapy.Spider):
     name = 'facebook_group_post'
