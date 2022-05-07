@@ -1,7 +1,6 @@
 .vscode
 
 # data crawled
-html
 *.old
 group_results
 page_results
