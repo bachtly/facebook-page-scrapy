@@ -20,8 +20,16 @@ class Parser():
     
     def parse_time(post):
         data_ft = eval( post.xpath('div[1]/div[1]')[0].attrib['data-ft'] )
-        post_context = list(data_ft['page_insights'].values())[0]['post_context']
-        publish_time = post_context['publish_time']
+        def unrol_dict(d):
+            items = []
+            for i, j in d.items():
+                if type(j) is not dict: items += [(i, j)]
+                else: items += [(t1,t2) for t1,t2 in unrol_dict(j).items()]
+            return dict(items)
+        data_ft_unrolled = unrol_dict(data_ft)
+        publish_time = data_ft['publish_time']
+        # post_context = list(data_ft['page_insights'].values())[0]['post_context']
+        # publish_time = post_context['publish_time']
         return datetime.fromtimestamp(publish_time)
     
     def parse_username(post):
