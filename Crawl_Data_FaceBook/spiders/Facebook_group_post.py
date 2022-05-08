@@ -52,6 +52,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
     
     def prepare_cookie(self):
         self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
+        self.log(f"List of cookies used: {self.cookies_name}")
         self.cookies = [
             json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
             for i in self.cookies_name]
@@ -107,9 +108,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
         return True
     
     
-    def start_requests(self):   
-        self.log(f"List of cookies used: {self.cookies_name}")
-        
+    def start_requests(self):           
         if not GET_BACKUP_QUEUES or not os.path.isfile('backup/queues.pkl'):
             self.page_urls += [
                 (g_id, f"https://mbasic.facebook.com/groups/{g_id}")
