@@ -4,8 +4,9 @@
 *.old
 group_results
 page_results
+backup
 cookies/*
-log.txt
+log*
 json
 
 # Byte-compiled / optimized / DLL files
