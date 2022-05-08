@@ -149,12 +149,12 @@ class Parser():
         
         cmt_divs = root.xpath("""//*[@id="m_story_permalink_view"]/div[2]/div[1]/div[5]/div""")
         comments = None if not cmt_divs else cmt_divs
-        if not comments or re.search('see_next', dict(comments[0].attrib).setdefault('id', '')):
+        if not comments or re.search('see_next|actions|placeholder|sentence', dict(comments[0].attrib).setdefault('id', '')):
             cmt_divs = root.xpath("""//*[@id="m_story_permalink_view"]/div[2]/div[1]/div[4]/div""")
         
         cmt_objs = []
         for cmt_div in cmt_divs:
-            if re.search('more|next|compose|prev', cmt_div.attrib['id'] ): continue
+            if re.search('more|next|compose|prev', dict(comments[0].attrib).setdefault('id', '') ): continue
             new_cmt = deepcopy(COMMENT_OBJ)
             
             ### comment text
