@@ -39,10 +39,12 @@ class DBUtils(metaclass=SingletonMeta):
         except: return False
         return True
     
-    def get_post(self, page_id, post_id):
-        return self.coll_post.find_one({
-            'page_id': page_id,
-            'post_id': post_id})
+    def get_post(self, page_id=None, post_id=None):
+        if page_id and post_id:
+            return self.coll_post.find_one({
+                'page_id': page_id,
+                'post_id': post_id})
+        return self.coll_post.find()
         
     def update_post(self, page_id, post_id, json_o):
         try:
@@ -53,6 +55,18 @@ class DBUtils(metaclass=SingletonMeta):
         except:
             return False
         return True
+    
+    def get_post_field(self, page_id, post_id, field_keys):
+        post = self.get_post(page_id, post_id)
+        if not post: return None
+        
+        for key in field_keys:
+            if key not in post.keys(): return None
+            
+            post = post[key]
+            if not post: return None
+        
+        return post
     
     def cmt_exist(self, page_id, post_id, cmt_id):
         existed = self.coll_cmt.count_documents({
