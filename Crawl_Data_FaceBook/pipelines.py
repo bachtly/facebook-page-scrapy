@@ -18,16 +18,6 @@ def log(s):
     with open('log.txt', 'a', encoding='utf-8') as f:
         f.write(f'{str(datetime.now())}: {s}\n')
 
-def drop_none(new_json):
-    pop_keys = []
-    for i,j in new_json.items():
-        if type(j) is dict: 
-            new_json[i] = Parser.drop_none(new_json[i])
-            j = new_json[i]
-        if j is None: pop_keys+=[i]
-    for i in pop_keys: new_json.pop(i, None)
-    return new_json
-
 class ParsePipeline:
     def process_item(self, item, spider):
         if isinstance(item, PostItem):
@@ -51,7 +41,7 @@ class DatabasePipeline:
         if isinstance(item, PostItem):
             existed = DB.post_exist(item['page_id'], item['post_id'])
             if existed: return
-            if not DB.insert_post(drop_none(json_o)):
+            if not DB.insert_post(Parser.drop_none(json_o)):
                 log(f"[ERROR] Cannot insert new post. (page_id: {item['page_id']}, post_id: {item['post_id']})\n{json_o}")
                     
         elif isinstance(item, CmtItem):
@@ -60,7 +50,7 @@ class DatabasePipeline:
             for json_o in jsons:
                 existed = DB.cmt_exist(json_o['page_id'], json_o['post_id'], json_o['comment_id'])
                 if not existed:
-                    if DB.insert_cmt(drop_none(json_o)): ids += [json_o['comment_id']]
+                    if DB.insert_cmt(Parser.drop_none(json_o)): ids += [json_o['comment_id']]
                     else: log(f"[ERROR] Cannot insert new cmt. (page_id: {item['page_id']}, post_id: {item['post_id']}, comment_id: {json_o['comment_id']})\n{json_o}")
 
             post = DB.get_post(item['page_id'], item['post_id'])
@@ -72,7 +62,7 @@ class DatabasePipeline:
                 
                 info = post['info']
                 info['comments'] = len(comments_full)
-                info = drop_none(info)
+                info = Parser.drop_none(info)
                 
                 if not DB.update_post(item['page_id'], item['post_id'], 
                     {'comments_full': comments_full, 'info': info}):
@@ -94,7 +84,7 @@ class DatabasePipeline:
             #     info = post['info']
             #     info['reactions'] = reactions
             #     info['reaction_count'] = sum([j for i,j in reactions.items()])
-            #     info = drop_none(info)
+            #     info = Parser.drop_none(info)
                 
             #     coll_post.update_one({
             #         'page_id': item['page_id'],
