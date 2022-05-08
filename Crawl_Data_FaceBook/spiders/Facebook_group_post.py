@@ -30,21 +30,17 @@ class FacebookGroupPostSpider(scrapy.Spider):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.backup_queues_dir = './backup/queues.pkl'
         self.cookies_dir = './cookies/post'
-        self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
-        self.cookies = [
-            json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
-            for i in self.cookies_name]
-        self.cookie_idx = np.random.randint(0, len(self.cookies))
+        self.log_file = './log.txt'
         
-        self.page_urls, self.post_urls, self.comment_urls, self.reaction_urls = [], [], [], []
+        self.page_urls, self.post_urls = [], []
         self.url = ''
         
         self.group_id = ''
         self.post_id = ''
         
         self.sleep_time = SLEEP_TIME
-        self.log_file = './log.txt'
         self.mode = CR_PAGE
         
         
@@ -52,9 +48,18 @@ class FacebookGroupPostSpider(scrapy.Spider):
         if not DEBUG: return 
         with open(self.log_file, 'a', encoding='utf-8') as f:
             f.write(f'{str(datetime.now())}: {s}\n')
-        
+    
+    
+    def prepare_cookie(self):
+        self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
+        self.cookies = [
+            json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
+            for i in self.cookies_name]
+        self.cookie_idx = np.random.randint(0, len(self.cookies))
+    
         
     def get_cookie(self):
+        self.prepare_cookie()
         self.log(f"Use cookie {self.cookies_name[self.cookie_idx]}")
         cookie = self.cookies[self.cookie_idx]
         self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
@@ -75,17 +80,13 @@ class FacebookGroupPostSpider(scrapy.Spider):
         pickle.dump({
             'page_urls': self.page_urls,
             'post_urls': self.post_urls,
-            'comment_urls': self.comment_urls,
-            'reaction_urls': self.reaction_urls
-        }, open('backup/queues.pkl', 'wb'))
+        }, open(self.backup_queues_dir, 'wb'))
     
     
     def get_backup_queues(self):
-        df = pickle.load(open('backup/queues.pkl', 'rb'))
+        df = pickle.load(open(self.backup_queues_dir, 'rb'))
         self.page_urls = df['page_urls']
         self.post_urls = df['post_urls']
-        self.reaction_urls = df['reaction_urls']
-        self.comment_urls = df['comment_urls']
     
     
     def gen_next_url(self):
