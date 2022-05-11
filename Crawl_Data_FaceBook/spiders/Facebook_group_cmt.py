@@ -13,6 +13,7 @@ from datetime import datetime
 from db_config import *
 from scrapy_config import *
 from DatabaseUtils.DBUtils import DBUtils
+from Parse_Data_FaceBook.Parser import Parser
 from Crawl_Data_FaceBook.items import PostItem, CmtItem, ReactionItem
 
 CR_PAGE=1
@@ -21,7 +22,10 @@ CR_COMMENT=3
 CR_REACTION=4
 
 DEBUG = SCRAPY_DEBUG
-GET_BACKUP_QUEUES = True
+GET_BACKUP_QUEUES = False
+RESET_COMMENTS = True
+
+DB = DBUtils()
 
 class FacebookGroupCmtSpider(scrapy.Spider):
     name = 'facebook_group_cmt'
@@ -30,10 +34,10 @@ class FacebookGroupCmtSpider(scrapy.Spider):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.backup_queues_dir = './backup/cmt_queues.pkl'
-        self.cookies_dir = './cookies/cmt'
+        self.cookies_dir = './cookies/test'
         self.log_file = './log_cmt.txt'
         
-        self.cmt_urls = []
+        self.comment_urls = []
         self.url = ''
         
         self.group_id = ''
@@ -51,6 +55,7 @@ class FacebookGroupCmtSpider(scrapy.Spider):
         
     def prepare_cookie(self):
         self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
+        self.log(f"List of cookies used: {self.cookies_name}")
         self.cookies = [
             json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
             for i in self.cookies_name]
@@ -87,14 +92,10 @@ class FacebookGroupCmtSpider(scrapy.Spider):
     
     
     def gen_next_url(self):
-        if len(self.post_urls) > 0:
-            self.group_id, self.url = self.post_urls[0]
-            self.post_urls = self.post_urls[1:]
-            self.mode = CR_POST
-        elif len(self.page_urls) > 0:
-            self.group_id, self.url = self.page_urls[0]
-            self.page_urls = self.page_urls[1:]
-            self.mode = CR_PAGE
+        if len(self.comment_urls) > 0:
+            self.group_id, self.post_id, self.url = self.comment_urls[0]
+            self.comment_urls = self.comment_urls[1:]
+            self.mode = CR_COMMENT
         else:
             self.log("Queues empty")
             self.url = None
@@ -105,20 +106,39 @@ class FacebookGroupCmtSpider(scrapy.Spider):
     
     
     def start_requests(self):   
-        self.log(f"List of cookies used: {self.cookies_name}")
-        
-        if not GET_BACKUP_QUEUES or not os.path.isfile('backup/queues.pkl'):
-            self.page_urls += [
-                (g_id, f"https://mbasic.facebook.com/groups/{g_id}")
-                for g_id in GROUP_IDS]   
+        if not GET_BACKUP_QUEUES or not os.path.isfile(self.backup_queues_dir):
+            posts = DB.get_post()
+            for post in posts:
+                if 'complete_crawl_comment' not in post['info']:
+                    ### update info.complete_crawl_comment and info.comments
+                    comments_full = [] if 'comments_full' not in post.keys() else post['comments_full'] or []
+                    
+                    info = post['info']
+                    info['comments'] = len(comments_full)
+                    info['complete_crawl_comment'] = False
+                    info = Parser.drop_none(info)
+                    
+                    if not DB.update_post(post['page_id'], post['post_id'], {'info': info}):
+                        self.log(f"[ERROR] Crawler cannot update info.complete_crawl_comment. ({post['page_id']}, {post['post_id']})")
+                    completed = False
+                else:
+                    ### check completed
+                    completed = post['info']['complete_crawl_comment'] or False
+                
+                if completed and not RESET_COMMENTS: continue
+                ### add comment url based on current # of comments crawled
+                if RESET_COMMENTS:
+                    comment_url = f'https://mbasic.facebook.com/groups/{post["page_id"]}/posts/{post["post_id"]}/?p=0'
+                else:
+                    comment_url = f'https://mbasic.facebook.com/groups/{post["page_id"]}/posts/{post["post_id"]}/?p={post["info"]["comments"]}'
+                self.comment_urls += [(post['page_id'], post['post_id'], comment_url)]
+                    
             self.backup_queues()
-            self.group_id, self.url = self.page_urls[0]
-            self.page_urls = self.page_urls[1:]     
-            self.mode = CR_PAGE   
+            self.group_id, self.post_id, self.url = self.comment_urls[0]
+            self.comment_urls = self.comment_urls[1:]
+            self.mode = CR_COMMENT
         else:
             self.get_backup_queues()
-            self.reaction_urls = []
-            self.comment_urls = []
             
             if self.gen_next_url() is False:
                 return None
@@ -137,86 +157,38 @@ class FacebookGroupCmtSpider(scrapy.Spider):
         if not os.path.isdir(dir):
             os.makedirs(dir)
         return dir
-
-
-    def get_html_page(self, response):
-        page_dir = self.get_dir(f'./html/{self.group_id}')
-        page_file = os.path.join(page_dir, 'pages.txt')
-        with open(page_file, 'a') as f:
-            f.write(f'{self.url}\n')
-
-        root = scrapy.Selector(response)
-        if self.is_cookies_blocked(root): return None
+    
+    
+    def get_html_cmt(self, response):
+        post_dir = self.get_dir(f'./html/{self.group_id}/{self.post_id}')
+        cmt_file = os.path.join(post_dir, 'comments.html')
         
-        ### add post urls
-        posts = root.xpath('//*[@id="m_group_stories_container"]/div[1]/div')
-        if not posts: return None
-        for post in posts:
-            ### Get post_id
-            try: 
-                data_ft = eval(post.attrib['data-ft'] )
-                post_id = str(int(data_ft['top_level_post_id']))
-            except: 
-                self.log(f'[ERROR] Cannot get post_id from data-ft (page)) ({self.page_id}).')
-                continue
-            
-            ### Check post existed in db
-            if DBUtils().post_exist(self.group_id, post_id): continue
-            
-            ### Add posts to crawl 
-            more = post.xpath('div')
-            if not more: continue   
-            
-            more = more[-1].xpath('div[2]/a')
-            if not more: continue
-            
-            hrefs = [
-                i.attrib["href"] for i in more 
-                if re.search(r'^https://mbasic.facebook', i.attrib["href"])]
-            self.post_urls += [(self.group_id, hrefs[0])]
-                
-        ### add nextpage url
-        more_page = root.xpath("""//*[@id="m_group_stories_container"]/div[2]/a""")    
-        if more_page:
-            href = more_page[0].attrib["href"]
-            self.page_urls += [(self.group_id, f"https://mbasic.facebook.com{href}")]
-
-
-    def get_html_post(self, response):
-        root = scrapy.Selector(response)
-        post = root.xpath('//*[@id="m_story_permalink_view"]')
-        if not post: return None
-
-        article = post[0].xpath('div[1]/div[1]')
-        if not article: return None
-        
-        try: 
-            data_ft = eval( article[0].attrib['data-ft'] )
-            self.post_id = str(int(data_ft['top_level_post_id']))
-        except: 
-            self.log(f'[ERROR] Cannot get post_id from data-ft of (page,post)) ({self.page_id}, {self.post_id}).')
-            return None
-        
-        post_dir = self.get_dir(f'./html/{self.group_id}')
-        post_file = os.path.join(post_dir, 'post.html')
-        
-        with open(post_file, 'w+', encoding='utf-8') as f:
+        with open(cmt_file, 'w+', encoding='utf-8') as f:
             f.write(f"<!-- {self.url} -->\n{response.text}")
+        
+        ### next cmt page    
+        cmt_objs = Parser.parse_cmt({
+            'html_path': cmt_file,
+            'page_id': self.group_id,
+            'post_id': self.post_id
+        })
+        if cmt_objs:
+            p = int(self.url.split('?p=')[1])
+            new_url = f'https://mbasic.facebook.com/groups/{self.group_id}/posts/{self.post_id}/?p={p+10}'
+            self.comment_urls += [new_url]
             
-        return post_file
+        return cmt_file
 
 
     def parse(self, response):
         ### Path to html
-        if self.mode == CR_POST: 
-            ret_path = self.get_html_post(response)
-            ret_items = [PostItem(), CmtItem()]
-            self.log(f"Done crawling post {self.group_id}/{self.post_id} with path {ret_path}.")
-        elif self.mode == CR_PAGE: 
-            ret_path = self.get_html_page(response)
-            self.log(f"Done crawling page {self.group_id} with path {ret_path}.")
+        ### Path to html
+        if self.mode == CR_COMMENT: 
+            ret_path = self.get_html_cmt(response)
+            ret_items = [CmtItem()]
+            self.log(f"Done crawling comments {self.group_id}/{self.post_id} with path {ret_path}.")
 
-        self.log(f"Post | Page queues: {len(self.post_urls)} | {len(self.page_urls)}")
+        self.log(f"Comment queue: {len(self.comment_urls)}")
         
         ### Return Item
         if ret_path:

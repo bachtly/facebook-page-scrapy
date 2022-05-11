@@ -90,6 +90,8 @@ class Parser():
     
     def parse_cmt_user_id(cmt_div):
         a = cmt_div.xpath('div[1]/h3[1]/a[1]')
+        if not a: return None
+        
         href = a[0].attrib['href']
         parse_res = parse_qs(urlparse(href).query) 
         if 'id' in parse_res.keys():
@@ -107,6 +109,14 @@ class Parser():
     def parse_cmt_id(cmt_div):
         return cmt_div.attrib['id']
     
+    def parse_cmt_url(cmt_div):
+        rep_bar = cmt_div.xpath('div[1]/div[3]/a')
+        if not rep_bar: return None
+        
+        for a in rep_bar:
+            href = a.attrib['href']
+            if re.search(r'/replies', href): return f'https://mbasic.facebook.com/{href}'
+        return None
     
     def parse_post(item):
         new_post = deepcopy(POST_OBJECT)
@@ -147,14 +157,13 @@ class Parser():
         src = open(item['html_path'], 'r', encoding='utf8').read()
         root = lxml.html.fromstring(src)
         
-        cmt_divs = root.xpath("""//*[@id="m_story_permalink_view"]/div[2]/div[1]/div[5]/div""")
-        comments = None if not cmt_divs else cmt_divs
-        if not comments or re.search('see_next|actions|placeholder|sentence', dict(comments[0].attrib).setdefault('id', '')):
-            cmt_divs = root.xpath("""//*[@id="m_story_permalink_view"]/div[2]/div[1]/div[4]/div""")
+        cmt_divs = root.xpath('//*[@id="m_story_permalink_view"]/div[2]/div[1]/div[5]/div')
+        if not cmt_divs or re.search('prev|next|actions|placeholder|sentence|composer', dict(cmt_divs[0].attrib).setdefault('id', '')):
+            cmt_divs = root.xpath('//*[@id="m_story_permalink_view"]/div[2]/div[1]/div[4]/div')
         
         cmt_objs = []
         for cmt_div in cmt_divs:
-            if re.search('more|next|compose|prev', dict(comments[0].attrib).setdefault('id', '') ): continue
+            if re.search('more|next|compose|prev', dict(cmt_div.attrib).setdefault('id', '') ): continue
             new_cmt = deepcopy(COMMENT_OBJ)
             
             ### comment text
@@ -168,6 +177,9 @@ class Parser():
             ### username user_id
             new_cmt['username'] = Parser.parse_cmt_username(cmt_div)
             new_cmt['user_id'] = Parser.parse_cmt_user_id(cmt_div)
+            
+            ### comment url
+            new_cmt['comment_url'] = Parser.parse_cmt_url(cmt_div)
             
             cmt_objs += [new_cmt]
         return [Parser.drop_none(i) for i in cmt_objs]
