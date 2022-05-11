@@ -39,10 +39,12 @@ class DBUtils(metaclass=SingletonMeta):
         except: return False
         return True
     
-    def get_post(self, page_id, post_id):
-        return self.coll_post.find_one({
-            'page_id': page_id,
-            'post_id': post_id})
+    def get_post(self, page_id=None, post_id=None):
+        if page_id and post_id:
+            return self.coll_post.find_one({
+                'page_id': page_id,
+                'post_id': post_id})
+        return self.coll_post.find()
         
     def update_post(self, page_id, post_id, json_o):
         try:
