@@ -33,7 +33,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.backup_queues_dir = './backup/debug_empty_text_queues.pkl'
-        self.cookies_dir = './cookies/mbasic'
+        self.cookies_dir = './cookies/debug'
         self.log_file = './log_debug_empty_text.txt'
         
         self.page_urls, self.post_urls = [], []
