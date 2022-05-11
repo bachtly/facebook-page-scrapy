@@ -55,6 +55,8 @@ class FacebookGroupPostSpider(scrapy.Spider):
     def prepare_cookie(self):
         self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
         self.log(f"List of cookies used: {self.cookies_name}")
+        self.sleep_time = 120/len(self.cookies_name)
+        self.log(f"Modify the sleep time: {self.sleep_time}")
         self.cookies = [
             json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
             for i in self.cookies_name]
