@@ -13,6 +13,7 @@ from datetime import datetime
 from db_config import *
 from scrapy_config import *
 from Crawl_Data_FaceBook.items import PostItem, CmtItem, ReactionItem
+from Crawl_Data_FaceBook.utils import ScrapyUtils
 from DatabaseUtils.DBUtils import DBUtils
 
 CR_PAGE=1
@@ -43,28 +44,11 @@ class FacebookGroupPostSpider(scrapy.Spider):
         self.sleep_time = SLEEP_TIME
         self.mode = CR_PAGE
         
-        
-    def log(self, s):
-        if not DEBUG: return 
-        with open(self.log_file, 'a', encoding='utf-8') as f:
-            f.write(f'{str(datetime.now())}: {s}\n')
-    
-    
-    def prepare_cookie(self):
-        self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
-        self.log(f"List of cookies used: {self.cookies_name}")
-        self.cookies = [
-            json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
-            for i in self.cookies_name]
-        self.cookie_idx = np.random.randint(0, len(self.cookies))
-    
-        
-    def get_cookie(self):
-        self.prepare_cookie()
-        self.log(f"Use cookie {self.cookies_name[self.cookie_idx]}")
-        cookie = self.cookies[self.cookie_idx]
-        self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
-        return cookie     
+        self.util = ScrapyUtils(
+            log_file = self.log_file,
+            DEBUG = DEBUG, 
+            cookies_dir = self.cookies_dir
+        )
     
     
     def handle_cookies_blocked(self):
@@ -100,7 +84,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
             self.page_urls = self.page_urls[1:]
             self.mode = CR_PAGE
         else:
-            self.log("Queues empty")
+            self.util.log("Queues empty")
             self.url = None
             return False
         
@@ -125,24 +109,17 @@ class FacebookGroupPostSpider(scrapy.Spider):
             if self.gen_next_url() is False:
                 return None
             
-        self.log(f"Sleep {self.sleep_time}s before crawling . . .")
+        self.util.log(f"Sleep {self.sleep_time}s before crawling . . .")
         time.sleep(self.sleep_time)
         
         yield Request(
             url=self.url,
-            cookies=self.get_cookie(),
+            cookies=self.util.get_cookie(),
             callback=self.parse,
         )
 
-
-    def get_dir(self, dir):
-        if not os.path.isdir(dir):
-            os.makedirs(dir)
-        return dir
-
-
     def get_html_page(self, response):
-        page_dir = self.get_dir(f'./html/{self.group_id}')
+        page_dir = self.util.get_dir(f'./html/{self.group_id}')
         page_file = os.path.join(page_dir, 'pages.txt')
         with open(page_file, 'a') as f:
             f.write(f'{self.url}\n')
@@ -159,7 +136,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
                 data_ft = eval(post.attrib['data-ft'] )
                 post_id = str(int(data_ft['top_level_post_id']))
             except: 
-                self.log(f'[ERROR] Cannot get post_id from data-ft (page)) ({self.page_id}).')
+                self.util.log(f'[ERROR] Cannot get post_id from data-ft (page)) ({self.page_id}).')
                 continue
             
             ### Check post existed in db
@@ -196,10 +173,10 @@ class FacebookGroupPostSpider(scrapy.Spider):
             data_ft = eval( article[0].attrib['data-ft'] )
             self.post_id = str(int(data_ft['top_level_post_id']))
         except: 
-            self.log(f'[ERROR] Cannot get post_id from data-ft of (page,post)) ({self.page_id}, {self.post_id}).')
+            self.util.log(f'[ERROR] Cannot get post_id from data-ft of (page,post)) ({self.page_id}, {self.post_id}).')
             return None
         
-        post_dir = self.get_dir(f'./html/{self.group_id}')
+        post_dir = self.util.get_dir(f'./html/{self.group_id}')
         post_file = os.path.join(post_dir, 'post.html')
         
         with open(post_file, 'w+', encoding='utf-8') as f:
@@ -213,12 +190,12 @@ class FacebookGroupPostSpider(scrapy.Spider):
         if self.mode == CR_POST: 
             ret_path = self.get_html_post(response)
             ret_items = [PostItem(), CmtItem()]
-            self.log(f"Done crawling post {self.group_id}/{self.post_id} with path {ret_path}.")
+            self.util.log(f"Done crawling post {self.group_id}/{self.post_id} with path {ret_path}.")
         elif self.mode == CR_PAGE: 
             ret_path = self.get_html_page(response)
-            self.log(f"Done crawling page {self.group_id} with path {ret_path}.")
+            self.util.log(f"Done crawling page {self.group_id} with path {ret_path}.")
 
-        self.log(f"Post | Page queues: {len(self.post_urls)} | {len(self.page_urls)}")
+        self.util.log(f"Post | Page queues: {len(self.post_urls)} | {len(self.page_urls)}")
         
         ### Return Item
         if ret_path:
@@ -234,11 +211,11 @@ class FacebookGroupPostSpider(scrapy.Spider):
         if self.gen_next_url() is False:
             return None
             
-        self.log(f"Sleeping {self.sleep_time}s before crawling . . .")
+        self.util.log(f"Sleeping {self.sleep_time}s before crawling . . .")
         time.sleep(self.sleep_time)
 
         yield Request(
             url=self.url,
-            cookies=self.get_cookie(),
+            cookies=self.util.get_cookie(),
             callback=self.parse,
         )
