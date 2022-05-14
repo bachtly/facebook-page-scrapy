@@ -21,3 +21,6 @@ class CmtItem(Item):
     
 class ReactionItem(Item):
     pass
+
+class DebugEmptyTextItem(Item):
+    pass

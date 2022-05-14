@@ -5,7 +5,7 @@ from datetime import datetime
 
 from db_config import *
 from itemadapter import ItemAdapter
-from Crawl_Data_FaceBook.items import PostItem, CmtItem, ReactionItem
+from Crawl_Data_FaceBook.items import DebugEmptyTextItem, PostItem, CmtItem, ReactionItem
 from Parse_Data_FaceBook.Parser import Parser
 from DatabaseUtils.DBUtils import DBUtils
 
@@ -29,6 +29,9 @@ class ParsePipeline:
         elif isinstance(item, ReactionItem):
             json_o = Parser.parse_reaction(dict(item))
             log(f"Successfully parse reaction from {item['html_path']}")
+        elif isinstance(item, DebugEmptyTextItem):
+            json_o = Parser.parse_post(dict(item))
+            log(f"Successfully parse debug empty text from {item['html_path']}")
         # pprint(json_o)
         return item, json_o
     
@@ -71,6 +74,11 @@ class DatabasePipeline:
                 log(f"[ERROR] Cannot find record. (page_id: {item['page_id']}, post_id: {item['post_id']})")
             
         elif isinstance(item, ReactionItem):
+            pass
+        
+        elif isinstance(item, DebugEmptyTextItem):
+            if not DB.update_post(json_o['page_id'], json_o['post_id'], {'text': json_o['text']}):
+                log(f"[ERROR] Cannot update DB debug text. (page_id: {item['page_id']}, post_id: {item['post_id']})\n{json_o}")
             pass
             # json_o = Parser.parse_reaction(dict(item))
             # reactions = json_o

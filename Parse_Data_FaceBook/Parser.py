@@ -63,7 +63,7 @@ class Parser():
         return imgs
     
     def parse_text(post):
-        text_divs = post.xpath('div[1]/div[1]/div[1]/di')
+        text_divs = post.xpath('div[1]/div[1]/div[1]/div')
         texts = [div.xpath('*//text()') for div in text_divs[1:]]
         texts = ['\n'.join(i) for i in texts if len(i)>0]
         return '\n'.join(texts)
