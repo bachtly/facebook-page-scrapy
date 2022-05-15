@@ -19,18 +19,18 @@ class ScrapyUtils:
             os.makedirs(dir)
         return dir
     
-    def prepare_cookie(self):
+    def prepare_cookie(self, spider):
         self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
         self.log(f"List of cookies used: {self.cookies_name}")
-        self.sleep_time = 120/len(self.cookies_name)
-        self.log(f"Modify the sleep time: {self.sleep_time}")
+        spider.sleep_time = 120/len(self.cookies_name)
+        self.log(f"Modify the sleep time: {spider.sleep_time}")
         self.cookies = [
             json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
             for i in self.cookies_name]
         self.cookie_idx = np.random.randint(0, len(self.cookies))  
         
-    def get_cookie(self):
-        self.prepare_cookie()
+    def get_cookie(self,spider):
+        self.prepare_cookie(spider)
         self.log(f"Use cookie {self.cookies_name[self.cookie_idx]}")
         cookie = self.cookies[self.cookie_idx]
         self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
