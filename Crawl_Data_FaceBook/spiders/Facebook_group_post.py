@@ -114,7 +114,7 @@ class FacebookGroupPostSpider(scrapy.Spider):
         
         yield Request(
             url=self.url,
-            cookies=self.util.get_cookie(),
+            cookies=self.util.get_cookie(self),
             callback=self.parse,
         )
 
@@ -216,6 +216,6 @@ class FacebookGroupPostSpider(scrapy.Spider):
 
         yield Request(
             url=self.url,
-            cookies=self.util.get_cookie(),
+            cookies=self.util.get_cookie(self),
             callback=self.parse,
         )
