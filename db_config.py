@@ -3,8 +3,8 @@ import urllib.parse
 
 uri = f"mongodb+srv://{urllib.parse.quote('edwardly1002')}:{urllib.parse.quote('Ltb123!@#')}@cluster0.lqbbu.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 DB_NAME = 'fakenews'
-COLL_POST = 'testpost'
-COLL_CMT = 'testcmt'
+COLL_POST = 'fbpost'
+COLL_CMT = 'fbcmt'
 
 COLL_POST_VAL = {
     '$jsonSchema': {
