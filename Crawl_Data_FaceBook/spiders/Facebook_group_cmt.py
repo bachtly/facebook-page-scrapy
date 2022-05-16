@@ -181,6 +181,7 @@ class FacebookGroupCmtSpider(scrapy.Spider):
                 ret_item['html_path'] = ret_path
                 ret_item['page_id'] = self.group_id
                 ret_item['post_id'] = self.post_id
+                ret_item['comment_id'] = None
                 ret_item['cookie'] = self.util.cookie_name
                 yield ret_item
         self.backup_queues()

@@ -18,6 +18,7 @@ class PostItem(Item):
     
 class CmtItem(Item):
     cookie = scrapy.Field()    
+    comment_id = scrapy.Field()
     pass
     
 class ReactionItem(Item):
