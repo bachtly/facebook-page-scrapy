@@ -31,7 +31,8 @@ class ScrapyUtils:
         
     def get_cookie(self,spider):
         self.prepare_cookie(spider)
-        self.log(f"Use cookie {self.cookies_name[self.cookie_idx]}")
+        self.cookie_name = self.cookies_name[self.cookie_idx]
+        self.log(f"Use cookie {self.cookie_name}")
         cookie = self.cookies[self.cookie_idx]
         self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
         return cookie
