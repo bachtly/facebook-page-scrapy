@@ -24,7 +24,7 @@ CR_REACTION=4
 
 DEBUG = SCRAPY_DEBUG
 GET_BACKUP_QUEUES = False
-RESET_COMMENTS = True
+RESET_COMMENTS = False
 
 DB = DBUtils()
 
@@ -181,6 +181,7 @@ class FacebookGroupCmtSpider(scrapy.Spider):
                 ret_item['html_path'] = ret_path
                 ret_item['page_id'] = self.group_id
                 ret_item['post_id'] = self.post_id
+                ret_item['cookie'] = self.util.cookie_name
                 yield ret_item
         self.backup_queues()
         
