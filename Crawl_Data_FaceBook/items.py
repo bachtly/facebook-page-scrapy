@@ -17,6 +17,7 @@ class PostItem(Item):
     pass
     
 class CmtItem(Item):
+    cookie = scrapy.Field()    
     pass
     
 class ReactionItem(Item):
