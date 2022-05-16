@@ -14,6 +14,7 @@ from db_config import *
 from scrapy_config import *
 from DatabaseUtils.DBUtils import DBUtils
 from Parse_Data_FaceBook.Parser import Parser
+from Crawl_Data_FaceBook.utils import ScrapyUtils
 from Crawl_Data_FaceBook.items import PostItem, CmtItem, ReactionItem
 
 CR_PAGE=1
@@ -46,28 +47,11 @@ class FacebookGroupCmtSpider(scrapy.Spider):
         self.sleep_time = SLEEP_TIME
         self.mode = CR_COMMENT
         
-        
-    def log(self, s):
-        if not DEBUG: return 
-        with open(self.log_file, 'a', encoding='utf-8') as f:
-            f.write(f'{str(datetime.now())}: {s}\n')
-        
-        
-    def prepare_cookie(self):
-        self.cookies_name = [i for i in os.listdir(self.cookies_dir)]
-        self.log(f"List of cookies used: {self.cookies_name}")
-        self.cookies = [
-            json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
-            for i in self.cookies_name]
-        self.cookie_idx = np.random.randint(0, len(self.cookies))
-    
-        
-    def get_cookie(self):
-        self.prepare_cookie()
-        self.log(f"Use cookie {self.cookies_name[self.cookie_idx]}")
-        cookie = self.cookies[self.cookie_idx]
-        self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
-        return cookie     
+        self.util = ScrapyUtils(
+            log_file = self.log_file,
+            DEBUG = DEBUG, 
+            cookies_dir = self.cookies_dir
+        )
     
     
     def handle_cookies_blocked(self):
@@ -97,7 +81,7 @@ class FacebookGroupCmtSpider(scrapy.Spider):
             self.comment_urls = self.comment_urls[1:]
             self.mode = CR_COMMENT
         else:
-            self.log("Queues empty")
+            self.util.log("Queues empty")
             self.url = None
             return False
         
@@ -119,7 +103,7 @@ class FacebookGroupCmtSpider(scrapy.Spider):
                     info = Parser.drop_none(info)
                     
                     if not DB.update_post(post['page_id'], post['post_id'], {'info': info}):
-                        self.log(f"[ERROR] Crawler cannot update info.complete_crawl_comment. ({post['page_id']}, {post['post_id']})")
+                        self.util.log(f"[ERROR] Crawler cannot update info.complete_crawl_comment. ({post['page_id']}, {post['post_id']})")
                     completed = False
                 else:
                     ### check completed
@@ -143,12 +127,12 @@ class FacebookGroupCmtSpider(scrapy.Spider):
             if self.gen_next_url() is False:
                 return None
             
-        self.log(f"Sleep {self.sleep_time}s before crawling . . .")
+        self.util.log(f"Sleep {self.sleep_time}s before crawling . . .")
         time.sleep(self.sleep_time)
         
         yield Request(
             url=self.url,
-            cookies=self.get_cookie(),
+            cookies=self.util.get_cookie(self),
             callback=self.parse,
         )
 
@@ -186,9 +170,9 @@ class FacebookGroupCmtSpider(scrapy.Spider):
         if self.mode == CR_COMMENT: 
             ret_path = self.get_html_cmt(response)
             ret_items = [CmtItem()]
-            self.log(f"Done crawling comments {self.group_id}/{self.post_id} with path {ret_path}.")
+            self.util.log(f"Done crawling comments {self.group_id}/{self.post_id} with path {ret_path}.")
 
-        self.log(f"Comment queue: {len(self.comment_urls)}")
+        self.util.log(f"Comment queue: {len(self.comment_urls)}")
         
         ### Return Item
         if ret_path:
@@ -204,11 +188,11 @@ class FacebookGroupCmtSpider(scrapy.Spider):
         if self.gen_next_url() is False:
             return None
             
-        self.log(f"Sleeping {self.sleep_time}s before crawling . . .")
+        self.util.log(f"Sleeping {self.sleep_time}s before crawling . . .")
         time.sleep(self.sleep_time)
 
         yield Request(
             url=self.url,
-            cookies=self.get_cookie(),
+            cookies=self.util.get_cookie(self),
             callback=self.parse,
         )
