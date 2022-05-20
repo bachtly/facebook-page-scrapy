@@ -57,8 +57,8 @@ class DBUtils(metaclass=SingletonMeta):
             'page_id': page_id, 
             'post_id': post_id, 
         }
-        for i, j in query.items(): 
-            if not j: query.pop(i)
+        items = query.items()
+        _ = [query.pop(i) for i,j in items]
             
         if page_id and post_id:
             return self.coll_post.find_one(query)
