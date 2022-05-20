@@ -34,8 +34,21 @@ class DBUtils(metaclass=SingletonMeta):
         }, limit=1)
         return existed > 0
 
+    def cmt_exist(self, page_id, post_id, cmt_id):
+        existed = self.coll_cmt.count_documents({
+            'page_id': page_id,
+            'post_id': post_id,
+            'comment_id': cmt_id
+        }, limit=1)
+        return existed > 0
+
     def insert_post(self, json_o):
         try: self.coll_post.insert_one(json_o)
+        except: return False
+        return True
+    
+    def insert_cmt(self, json_o):
+        try: self.coll_cmt.insert_one(json_o)
         except: return False
         return True
     
@@ -67,16 +80,3 @@ class DBUtils(metaclass=SingletonMeta):
             if not post: return None
         
         return post
-    
-    def cmt_exist(self, page_id, post_id, cmt_id):
-        existed = self.coll_cmt.count_documents({
-            'page_id': page_id,
-            'post_id': post_id,
-            'comment_id': cmt_id
-        }, limit=1)
-        return existed > 0
-
-    def insert_cmt(self, json_o):
-        try: self.coll_cmt.insert_one(json_o)
-        except: return False
-        return True
