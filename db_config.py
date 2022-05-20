@@ -103,7 +103,8 @@ POST_OBJECT = {
         },
         'comments': 0,
         'shares': 0,
-        'reactors': []
+        'reactors': [],
+        'complete_crawl_comment': False,
     },
     'comments_full': [],
     'post_id': None,
@@ -124,6 +125,7 @@ COMMENT_OBJ = {
         'comments': 0,
         'reactions': None,
         'reactors': None,
+        'complete_crawl_comment': False,
     },
     'text': '',
     'comment_id': None,
