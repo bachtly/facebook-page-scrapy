@@ -53,10 +53,15 @@ class DBUtils(metaclass=SingletonMeta):
         return True
     
     def get_post(self, page_id=None, post_id=None):
+        query = {
+            'page_id': page_id, 
+            'post_id': post_id, 
+        }
+        for i, j in query.items(): 
+            if not j: query.pop(i)
+            
         if page_id and post_id:
-            return self.coll_post.find_one({
-                'page_id': page_id,
-                'post_id': post_id})
+            return self.coll_post.find_one(query)
         return self.coll_post.find()
         
     def update_post(self, page_id, post_id, json_o):
