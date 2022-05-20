@@ -87,6 +87,17 @@ class DBUtils(metaclass=SingletonMeta):
             return False
         return True
     
+    def update_cmt(self, page_id, post_id, comment_id, json_o):
+        try:
+            self.coll_cmt.update_one({
+                'page_id': page_id,
+                'post_id': post_id,
+                'comment_id': comment_id,
+            }, {'$set': json_o})
+        except:
+            return False
+        return True
+    
     def get_post_field(self, page_id, post_id, field_keys):
         post = self.get_post(page_id, post_id)
         if not post: return None
