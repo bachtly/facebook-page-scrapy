@@ -62,7 +62,20 @@ class DBUtils(metaclass=SingletonMeta):
             
         if page_id and post_id:
             return self.coll_post.find_one(query)
-        return self.coll_post.find()
+        return self.coll_post.find(query)
+    
+    def get_cmt(self, page_id=None, post_id=None, comment_id=None):
+        query = {
+            'page_id': page_id, 
+            'post_id': post_id,
+            'comment_id': comment_id 
+        }
+        items = list(query.items())
+        _ = [query.pop(i) for i,j in items]
+            
+        if page_id and post_id and comment_id:
+            return self.coll_cmt.find_one(query)
+        return self.coll_cmt.find(query)
         
     def update_post(self, page_id, post_id, json_o):
         try:
