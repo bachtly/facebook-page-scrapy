@@ -117,6 +117,7 @@ class Parser():
         if text_div:
             text = text_div[0].text if text_div[0].text else ''
             text += '\n'.join(text_div[0].xpath('*//text()'))
+            text += '\n'.join(text_div[0].xpath('text()'))
         else: text = ''
         return text
     
@@ -133,7 +134,7 @@ class Parser():
         return None
     
     def parse_subcmt_reply_to(cmt_div):
-        a = cmt_div.xpath('div[1]/div[1]/a')
+        a = cmt_div.xpath('div[1]/h3/a')
         if not a: return None
         href = a[0].attrib['href']
         parse_res = parse_qs(urlparse(href).query) 
