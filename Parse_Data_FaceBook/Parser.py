@@ -1,10 +1,13 @@
 from urllib.parse import urlparse, parse_qs   
+from DatabaseUtils.DBUtils import DBUtils
 from datetime import datetime
 from copy import deepcopy
 from db_config import *
 import numpy as np
 import lxml.html
 import re
+
+DB = DBUtils()
 
 class Parser():
     
@@ -129,6 +132,15 @@ class Parser():
             if re.search(r'/replies', href): return f'https://mbasic.facebook.com/{href}'
         return None
     
+    def parse_subcmt_reply_to(cmt_div):
+        a = cmt_div.xpath('div[1]/div[1]/a')
+        if not a: return None
+        href = a[0].attrib['href']
+        parse_res = parse_qs(urlparse(href).query) 
+        if 'id' in parse_res.keys():
+            return parse_res['id'][0]
+        return href.split('?')[0][1:]
+    
     def parse_post(item):
         new_post = deepcopy(POST_OBJECT)
 
@@ -209,7 +221,6 @@ class Parser():
             if 'id' in dict(possible_cmts[0].attrib).keys():
                 cmt_divs = possible_cmts
         
-        
         if not cmt_divs: return []
         
         cmt_objs = []
@@ -219,6 +230,7 @@ class Parser():
             
             ### comment text
             new_cmt['text'] = Parser.parse_cmt_text(cmt_div)
+            new_cmt['info']['complete_crawl_comment'] = True
             
             ### id
             new_cmt['comment_id'] = Parser.parse_cmt_id(cmt_div)
@@ -228,6 +240,10 @@ class Parser():
             ### username user_id
             new_cmt['username'] = Parser.parse_cmt_username(cmt_div)
             new_cmt['user_id'] = Parser.parse_subcmt_user_id(cmt_div)
+            
+            ### reply to
+            father_cmt = DB.get_cmt(item['page_id'], item['post_id'], item['comment_id'])
+            new_cmt['reply_to'] = Parser.parse_subcmt_reply_to(cmt_div) or father_cmt['user_id']
             
             cmt_objs += [new_cmt]
         return [Parser.drop_none(i) for i in cmt_objs]
