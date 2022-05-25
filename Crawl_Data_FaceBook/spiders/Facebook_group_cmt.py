@@ -160,6 +160,9 @@ class FacebookGroupCmtSpider(scrapy.Spider):
             p = int(self.url.split('?p=')[1])
             new_url = f'https://mbasic.facebook.com/groups/{self.group_id}/posts/{self.post_id}/?p={p+10}'
             self.comment_urls += [new_url]
+        else:
+            ### update complete crawl comment = True
+            pass
             
         return cmt_file
 

@@ -109,3 +109,9 @@ class DBUtils(metaclass=SingletonMeta):
             if not post: return None
         
         return post
+    
+    def check_comment_consistency(self, post):
+        post['comments_full'] = [
+            i for i in post['comments_full']
+            if self.cmt_exist(post['page_id'], post['post_id'], i)]
+        return post
