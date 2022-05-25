@@ -52,7 +52,7 @@ COLL_CMT_VAL = {
     '$jsonSchema': {
         'bsonType': 'object',
         'additionalProperties': True,
-        'required': ['info', 'text', 'comment_id', 'post_id', 'page_id', 'comment_url', 'cookie'],
+        'required': ['info', 'text', 'comment_id', 'post_id', 'page_id', 'cookie'],
         'properties': {
             'info': {
                 'bsonType': 'object',
@@ -133,7 +133,7 @@ COMMENT_OBJ = {
     'comment_id': None,
     'post_id': None,
     'page_id': None,
-    'comments_full': None,
+    'comments_full': [],
     'comment_url': None,
     'username': None,
     'user_id': None,

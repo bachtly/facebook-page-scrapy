@@ -98,6 +98,17 @@ class Parser():
             return parse_res['id'][0]
         return href.split('?')[0][1:]
     
+    def parse_subcmt_user_id(cmt_div):
+        a = cmt_div.xpath('div[1]/h3[1]/a[1]')
+        if not a: return None
+        
+        href = a[0].attrib['href']
+        parse_res = parse_qs(urlparse(href).query) 
+        if 'id' in parse_res.keys():
+            return parse_res['id'][0]
+
+        return href.split('?')[0].split('/')[-1]
+    
     def parse_cmt_text(cmt_div):
         text_div = cmt_div.xpath('div[1]/div[1]')
         if text_div:
@@ -180,6 +191,43 @@ class Parser():
             
             ### comment url
             new_cmt['comment_url'] = Parser.parse_cmt_url(cmt_div)
+            
+            cmt_objs += [new_cmt]
+        return [Parser.drop_none(i) for i in cmt_objs]
+    
+    def parse_subcmt(item):
+        src = open(item['html_path'], 'r', encoding='utf8').read()
+        root = lxml.html.fromstring(src)
+        
+        ### choose the right cmt panel
+        inner_divs = root.xpath('//*[@id="root"]/div[1]/div')
+        if not inner_divs: return []
+        cmt_divs = None
+        for inner_div in inner_divs:
+            possible_cmts = inner_div.xpath('div')
+            if not possible_cmts: continue
+            if 'id' in dict(possible_cmts[0].attrib).keys():
+                cmt_divs = possible_cmts
+        
+        
+        if not cmt_divs: return []
+        
+        cmt_objs = []
+        for cmt_div in cmt_divs:
+            if re.search('more|next|compose|prev', dict(cmt_div.attrib).setdefault('id', '') ): continue
+            new_cmt = deepcopy(COMMENT_OBJ)
+            
+            ### comment text
+            new_cmt['text'] = Parser.parse_cmt_text(cmt_div)
+            
+            ### id
+            new_cmt['comment_id'] = Parser.parse_cmt_id(cmt_div)
+            new_cmt['page_id'] = item['page_id']
+            new_cmt['post_id'] = item['post_id']
+            
+            ### username user_id
+            new_cmt['username'] = Parser.parse_cmt_username(cmt_div)
+            new_cmt['user_id'] = Parser.parse_subcmt_user_id(cmt_div)
             
             cmt_objs += [new_cmt]
         return [Parser.drop_none(i) for i in cmt_objs]
