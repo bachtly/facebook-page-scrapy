@@ -8,6 +8,7 @@ class ScrapyUtils:
         self.log_file = log_file
         self.DEBUG = DEBUG
         self.cookies_dir = cookies_dir
+        self.cookie_idx = 0
     
     def log(self, s):
         if not self.DEBUG: return 
@@ -26,15 +27,15 @@ class ScrapyUtils:
         self.log(f"Modify the sleep time: {spider.sleep_time}")
         self.cookies = [
             json.load(open(os.path.join(self.cookies_dir, i), "r"))['cookies'] 
-            for i in self.cookies_name]
-        self.cookie_idx = np.random.randint(0, len(self.cookies))  
+            for i in self.cookies_name] 
         
     def get_cookie(self,spider):
         self.prepare_cookie(spider)
         self.cookie_name = self.cookies_name[self.cookie_idx]
+        self.log(f"Use cookie idx {self.cookie_idx}")
         self.log(f"Use cookie {self.cookie_name}")
-        cookie = self.cookies[self.cookie_idx]
+        self.cookie = self.cookies[self.cookie_idx]
         self.cookie_idx = (self.cookie_idx + 1) % len(self.cookies)
-        return cookie
+        return self.cookie
             
     
